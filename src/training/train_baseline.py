@@ -26,9 +26,12 @@ def train_model():
     )
 
     model = RandomForestRegressor(
-        n_estimators=200,
-        random_state=42
-    )
+        n_estimators=300,
+        max_depth=10,
+        min_samples_split=5,
+        random_state=42,
+        n_jobs=-1
+        )
 
     model.fit(X_train, y_train)
     preds = model.predict(X_test)

@@ -1,51 +1,70 @@
-import pandas as pd
 import joblib
-from pymongo import MongoClient
-import os
-from dotenv import load_dotenv
-from datetime import datetime, timedelta
+import pandas as pd
+from src.utils.data_loader import load_data
+from src.preprocessing.preprocess import clean_data
+from src.features.feature_engineering import (
+    add_time_features,
+    add_lag_features,
+    add_rolling_features,
+    add_derived_features,
+)
+from src.utils.aqi_converter import pm25_to_aqi
 
 
+def predict_next_3_days():
+    df = load_data()
+    df = clean_data(df)
 
-load_dotenv()
+    df = add_time_features(df)
+    df = add_lag_features(df)
+    df = add_rolling_features(df)
+    df = add_derived_features(df)
 
-MONGO_URI = os.getenv("MONGODB_URI")
-DB_NAME = os.getenv("MONGODB_DB", "aqi_feature_store")
-COLLECTION_NAME = os.getenv("MONGODB_COLLECTION", "aqi_features")
+    df = df.dropna()
 
-client = MongoClient(MONGO_URI)
-db = client[DB_NAME]
-collection = db[COLLECTION_NAME]
+    feature_cols = [
+        "pm2_5",
+        "pm10",
+        "co",
+        "no2",
+        "o3",
+        "so2",
+        "nh3",
+        "hour",
+        "day",
+        "month",
+        "day_of_week",
+        "aqi_lag1",
+        "aqi_lag2",
+        "aqi_lag3",
+        "aqi_roll3",
+        "aqi_roll6",
+        "aqi_std3",
+        "pm2_5_change_rate",
+        "pm10_change_rate",
+        "pm2_5_pm10_ratio",
+    ]
 
-# Load latest data to build features
-data = pd.DataFrame(list(collection.find()))
-data.sort_values("timestamp", inplace=True)
-latest = data.iloc[-3:]  # last 3 records to build lag features
+    X_latest = df[feature_cols].iloc[[-1]]
 
-pollutants = ["aqi", "pm2_5", "pm10", "co", "no2", "o3", "so2", "nh3"]
-features = []
+    preds = {}
 
-X_new = {}
-for lag, rec in enumerate(reversed(latest.to_dict(orient="records")), 1):
-    for p in pollutants:
-        X_new[f"{p}_lag_{lag}"] = rec[p]
-        features.append(f"{p}_lag_{lag}")
+    for horizon in ["t_plus_1", "t_plus_2", "t_plus_3"]:
+        import glob
 
-X_new_df = pd.DataFrame([X_new])[features]
+        model_path = sorted(glob.glob("models/best_t_plus_1_*"))[-1]
+        model = joblib.load(model_path)
 
-# Load models
-models = {}
-predictions = {}
-for horizon in ["t+1", "t+2", "t+3"]:
-    models[horizon] = joblib.load(f"models/rf_{horizon}.pkl")
-    predictions[horizon] = models[horizon].predict(X_new_df)[0]
+        pm25_pred = model.predict(X_latest)[0]
+        preds[horizon] = {
+            "pm2_5": pm25_pred,
+            "aqi": pm25_to_aqi(pm25_pred),
+        }
 
-# Save predictions to MongoDB
-future_dates = [latest["timestamp"].iloc[-1] + pd.Timedelta(days=i) for i in range(1, 4)]
-for i, horizon in enumerate(["t+1", "t+2", "t+3"]):
-    record = {
-        "timestamp": future_dates[i],
-        "predicted_aqi": predictions[horizon],
-    }
-    collection.insert_one(record)
-    print(f"✅ Inserted prediction for {future_dates[i]}: {predictions[horizon]}")
+    return preds
+
+
+if __name__ == "__main__":
+    predictions = predict_next_3_days()
+    for k, v in predictions.items():
+        print(k, "→ PM2.5:", round(v["pm2_5"], 2), "| AQI:", v["aqi"])
