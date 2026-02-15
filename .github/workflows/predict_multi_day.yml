@@ -8,6 +8,12 @@ on:
 jobs:
   run_inference:
     runs-on: ubuntu-latest
+    env:
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      MONGODB_DB: ${{ secrets.MONGODB_DB }}
+      MONGODB_COLLECTION: ${{ secrets.MONGODB_COLLECTION }}
+      DAGSHUB_USER: ${{ secrets.DAGSHUB_USER }}
+      DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
 
     steps:
       - name: Checkout code
@@ -25,11 +31,6 @@ jobs:
           pip install dagshub mlflow pymongo python-dotenv
 
       - name: Run Multi-Day Prediction
-        env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
-          MONGODB_DB: ${{ secrets.MONGODB_DB }}
-          MONGODB_COLLECTION: ${{ secrets.MONGODB_COLLECTION }}
-          DAGSHUB_USER: ${{ secrets.DAGSHUB_USER }}
-          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+       
         run: |
           python -m src.inference.predict_multi_day
