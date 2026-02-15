@@ -36,3 +36,21 @@ jobs:
        
         run: |
           python -m src.inference.predict_multi_day
+      - name: Diagnose MongoDB connectivity
+        run: |
+          python - <<'PY'
+          import ssl, sys, traceback
+          import pymongo, certifi, os
+          print("OpenSSL:", ssl.OPENSSL_VERSION)
+          uri = os.environ.get("MONGODB_URI")
+          print("Using URI present:", bool(uri))
+          try:
+            client = pymongo.MongoClient(uri, tls=True, tlsCAFile=certifi.where(), serverSelectionTimeoutMS=20000)
+            print("Attempting server_info()...")
+            print(client.server_info())
+            print("Connected OK")
+          except Exception as e:
+            print("CONNECT ERROR:", type(e).__name__, e)
+            traceback.print_exc()
+            sys.exit(2)
+          PY
