@@ -10,8 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       MONGODB_URI: ${{ secrets.MONGODB_URI }}
-      MONGODB_DB: ${{ secrets.MONGODB_DB }}
-      MONGODB_COLLECTION: ${{ secrets.MONGODB_COLLECTION }}
+      MONGODB_FEATURE_DB: ${{ secrets.MONGODB_FEATURE_DB }}
+      MONGODB_FEATURE_COLLECTION: ${{ secrets.MONGODB_FEATURE_COLLECTION }}
+      MONGODB_PREDICTION_DB: ${{ secrets.MONGODB_PREDICTION_DB }}
+      MONGODB_PREDICTION_COLLECTION: ${{ secrets.MONGODB_PREDICTION_COLLECTION }}
       DAGSHUB_USER: ${{ secrets.DAGSHUB_USER }}
       DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
 
