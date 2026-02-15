@@ -24,11 +24,11 @@ from src.utils.aqi_converter import pm25_to_aqi_category  # updated function
 # 1️⃣ Initialize MLflow + DagsHub
 # -------------------------------------------------
 dagshub.init(
-    repo_owner="aaa2633522",
+    repo_owner=os.environ["DAGSHUB_USER"],
     repo_name="pearls-aqi-predictor",
-    mlflow=True
+    mlflow=True,
+    token=os.environ["DAGSHUB_TOKEN"]
 )
-
 def load_production_model(model_name):
     """Load model from MLflow production stage"""
     return mlflow.sklearn.load_model(f"models:/{model_name}@production")
