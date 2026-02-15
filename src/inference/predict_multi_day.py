@@ -13,7 +13,7 @@ import pandas as pd
 from pymongo import MongoClient
 
 # Import utilities after environment is loaded
-from src.utils.data_loader import load_data
+from src.utils.data_loader import load_data, get_client
 from src.preprocessing.preprocess import clean_data
 from src.features.feature_engineering import (
     add_time_features,
@@ -42,16 +42,20 @@ def load_production_model(model_name):
 # 2️⃣ MongoDB Connection
 # -------------------------------------------------
 load_dotenv()
-MONGODB_URI = os.getenv("MONGODB_URI")
-client = MongoClient(MONGODB_URI)
+# Create MongoDB client (uses env or raises a clear error)
+client = get_client()
 
-# Feature store (for load_data)
-FEATURE_DB = os.getenv("MONGODB_FEATURE_DB")
-FEATURE_COLLECTION = os.getenv("MONGODB_FEATURE_COLLECTION")
+# Feature store (for load_data) - fall back to general MONGODB_DB/MONGODB_COLLECTION
+FEATURE_DB = os.getenv("MONGODB_FEATURE_DB", os.getenv("MONGODB_DB", "aqi_db"))
+FEATURE_COLLECTION = os.getenv(
+    "MONGODB_FEATURE_COLLECTION", os.getenv("MONGODB_COLLECTION", "aqi_features")
+)
 
 # Prediction store (for storing forecasts)
-PREDICTION_DB = os.getenv("MONGODB_PREDICTION_DB")
-PREDICTION_COLLECTION = os.getenv("MONGODB_PREDICTION_COLLECTION")
+PREDICTION_DB = os.getenv("MONGODB_PREDICTION_DB", os.getenv("MONGODB_DB", "aqi_db"))
+PREDICTION_COLLECTION = os.getenv(
+    "MONGODB_PREDICTION_COLLECTION", os.getenv("MONGODB_COLLECTION", "predictions")
+)
 prediction_collection = client[PREDICTION_DB][PREDICTION_COLLECTION]
 # -------------------------------------------------
 # 3️⃣ Build Latest Feature Row
