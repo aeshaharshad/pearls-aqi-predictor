@@ -3,12 +3,16 @@
 import os
 from datetime import datetime
 
+# Load environment variables early to avoid import-time errors
+from dotenv import load_dotenv
+load_dotenv()
+
 import dagshub
 import mlflow
 import pandas as pd
-from dotenv import load_dotenv
 from pymongo import MongoClient
 
+# Import utilities after environment is loaded
 from src.utils.data_loader import load_data
 from src.preprocessing.preprocess import clean_data
 from src.features.feature_engineering import (
@@ -38,11 +42,17 @@ def load_production_model(model_name):
 # 2️⃣ MongoDB Connection
 # -------------------------------------------------
 load_dotenv()
-MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")  # fallback
+MONGODB_URI = os.getenv("MONGODB_URI")
 client = MongoClient(MONGODB_URI)
-db = client["aqi_db"]
-prediction_collection = db["aqi_predictions"]
 
+# Feature store (for load_data)
+FEATURE_DB = os.getenv("MONGODB_FEATURE_DB")
+FEATURE_COLLECTION = os.getenv("MONGODB_FEATURE_COLLECTION")
+
+# Prediction store (for storing forecasts)
+PREDICTION_DB = os.getenv("MONGODB_PREDICTION_DB")
+PREDICTION_COLLECTION = os.getenv("MONGODB_PREDICTION_COLLECTION")
+prediction_collection = client[PREDICTION_DB][PREDICTION_COLLECTION]
 # -------------------------------------------------
 # 3️⃣ Build Latest Feature Row
 # -------------------------------------------------
