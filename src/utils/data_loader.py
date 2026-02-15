@@ -4,6 +4,7 @@ from typing import Optional
 import pandas as pd
 from dotenv import load_dotenv
 from pymongo import MongoClient
+import certifi
 
 # Load env vars for defaults; actual connection is lazy
 load_dotenv()
@@ -21,7 +22,8 @@ def get_client(uri: Optional[str] = None) -> MongoClient:
     uri = uri or get_mongo_uri()
     if not uri:
         raise ValueError("MONGODB_URI is not set")
-    return MongoClient(uri)
+    # Ensure a trusted CA bundle is provided for TLS connections (helps in CI)
+    return MongoClient(uri, tlsCAFile=certifi.where())
 
 
 def load_data(
