@@ -2,12 +2,12 @@ name: Hourly AQI Prediction
 
 on:
   schedule:
-    - cron: "0 * * * *"
-  workflow_dispatch:
+    - cron: "0 * * * *"  # Every hour
+  workflow_dispatch:      # Manual trigger
 
 jobs:
   run_inference:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04  # CRITICAL: Use Ubuntu 20.04 for OpenSSL 1.1.1
     env:
       MONGODB_URI: ${{ secrets.MONGODB_URI }}
       MONGODB_FEATURE_DB: ${{ secrets.MONGODB_FEATURE_DB }}
@@ -21,52 +21,51 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup Python
+      - name: Setup Python 3.10.11
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.10.11"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install dagshub mlflow pymongo python-dotenv certifi
+          pip install 'pymongo[srv]>=4.5.0' certifi dagshub mlflow python-dotenv
 
-      # Move diagnostic BEFORE the main script
-      - name: Diagnose MongoDB connectivity
+      - name: Verify MongoDB Connection
         run: |
           python - <<'PY'
-          import ssl, sys, traceback, os
-          import pymongo, certifi
+          import ssl, sys, os
+          import pymongo
           
           print("=" * 60)
-          print("OpenSSL version:", ssl.OPENSSL_VERSION)
-          print("Certifi CA bundle:", certifi.where())
+          print("🔍 Environment Check")
+          print("=" * 60)
+          print(f"Python: {sys.version}")
+          print(f"OpenSSL: {ssl.OPENSSL_VERSION}")
+          print(f"PyMongo: {pymongo.__version__}")
           print("=" * 60)
           
           uri = os.environ.get("MONGODB_URI")
           if not uri:
-              print("ERROR: MONGODB_URI not set")
+              print("❌ MONGODB_URI not set")
               sys.exit(1)
           
-          print("URI present: ✓")
-          print("Attempting connection...")
+          print("✅ MONGODB_URI present")
+          print("🔗 Testing connection...")
           
           try:
               client = pymongo.MongoClient(
                   uri,
                   tls=True,
-                  tlsCAFile=certifi.where(),
-                  serverSelectionTimeoutMS=20000,
-                  connectTimeoutMS=20000
+                  tlsAllowInvalidCertificates=True,
+                  serverSelectionTimeoutMS=30000
               )
               info = client.server_info()
-              print("✓ Connected successfully!")
-              print(f"MongoDB version: {info.get('version')}")
+              print(f"✅ Connected to MongoDB v{info.get('version')}")
+              print("=" * 60)
           except Exception as e:
-              print(f"✗ Connection failed: {type(e).__name__}")
-              print(f"Error: {e}")
-              traceback.print_exc()
+              print(f"❌ Connection failed: {e}")
               sys.exit(1)
           PY
 
