@@ -1,55 +1,32 @@
+# src/utils/data_loader.py
+
 import os
-from typing import Optional
-
-import pandas as pd
-from dotenv import load_dotenv
-from pymongo import MongoClient
 import certifi
+import pandas as pd
+from pymongo import MongoClient
 
-# Load env vars for defaults; actual connection is lazy
-load_dotenv()
-
-DEFAULT_DB = os.getenv("MONGODB_DB", "aqi_db")
-DEFAULT_COLLECTION = os.getenv("MONGODB_COLLECTION", "aqi_features")
-
-
-def get_mongo_uri() -> Optional[str]:
-    return os.getenv("MONGODB_URI")
-
-
-def get_client(uri: Optional[str] = None) -> MongoClient:
-    """Return a MongoClient. Raises ValueError if URI is not set."""
-    uri = uri or get_mongo_uri()
+def get_client():
+    """Create MongoDB client with proper TLS configuration"""
+    uri = os.getenv("MONGODB_URI")
     if not uri:
-        raise ValueError("MONGODB_URI is not set")
-    # Ensure a trusted CA bundle is provided for TLS connections (helps in CI)
-    # - enable TLS explicitly, provide certifi CA bundle, and increase timeouts
+        raise ValueError("MONGODB_URI environment variable not set")
+    
+    # Explicit TLS configuration for MongoDB Atlas
     return MongoClient(
         uri,
         tls=True,
         tlsCAFile=certifi.where(),
         serverSelectionTimeoutMS=30000,
-        connectTimeoutMS=20000,
+        connectTimeoutMS=30000,
+        socketTimeoutMS=30000
     )
 
-
-def load_data(
-    client: Optional[MongoClient] = None,
-    feature_db: Optional[str] = None,
-    feature_collection: Optional[str] = None,
-) -> pd.DataFrame:
-    """Load feature data from MongoDB into a pandas DataFrame.
-
-    Parameters are optional; when omitted the function uses environment defaults.
-    This function does not import other modules to avoid circular imports.
-    """
-    if client is None:
-        client = get_client()
-
-    feature_db = feature_db or os.getenv("MONGODB_FEATURE_DB", DEFAULT_DB)
-    feature_collection = (
-        feature_collection or os.getenv("MONGODB_FEATURE_COLLECTION", DEFAULT_COLLECTION)
-    )
-
-    coll = client[feature_db][feature_collection]
+def load_data():
+    """Load data from MongoDB feature collection"""
+    client = get_client()
+    
+    db_name = os.getenv("MONGODB_FEATURE_DB", "aqi_db")
+    collection_name = os.getenv("MONGODB_FEATURE_COLLECTION", "aqi_features")
+    
+    coll = client[db_name][collection_name]
     return pd.DataFrame(list(coll.find()))
