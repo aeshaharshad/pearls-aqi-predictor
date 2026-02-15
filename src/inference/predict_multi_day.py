@@ -24,13 +24,11 @@ from src.utils.aqi_converter import pm25_to_aqi_category  # updated function
 # 1️⃣ Initialize MLflow + DagsHub
 # -------------------------------------------------
 # Set DagsHub auth via environment variables
-os.environ["DAGSHUB_USERNAME"] = os.environ["DAGSHUB_USER"]
-os.environ["DAGSHUB_PASSWORD"] = os.environ["DAGSHUB_TOKEN"]
+DAGSHUB_USER = os.environ["DAGSHUB_USER"]
+DAGSHUB_TOKEN = os.environ["DAGSHUB_TOKEN"]
 
-dagshub.init(
-    repo_owner=os.environ["DAGSHUB_USER"],
-    repo_name="pearls-aqi-predictor",
-    mlflow=True
+mlflow.set_tracking_uri(
+    f"https://{DAGSHUB_USER}:{DAGSHUB_TOKEN}@dagshub.com/{DAGSHUB_USER}/pearls-aqi-predictor.mlflow"
 )
 def load_production_model(model_name):
     """Load model from MLflow production stage"""
