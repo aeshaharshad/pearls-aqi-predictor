@@ -6,3 +6,5 @@ dagshub
 pymongo
 python-dotenv
 joblib
+certifi
+dnspython

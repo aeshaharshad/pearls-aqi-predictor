@@ -23,7 +23,14 @@ def get_client(uri: Optional[str] = None) -> MongoClient:
     if not uri:
         raise ValueError("MONGODB_URI is not set")
     # Ensure a trusted CA bundle is provided for TLS connections (helps in CI)
-    return MongoClient(uri, tlsCAFile=certifi.where())
+    # - enable TLS explicitly, provide certifi CA bundle, and increase timeouts
+    return MongoClient(
+        uri,
+        tls=True,
+        tlsCAFile=certifi.where(),
+        serverSelectionTimeoutMS=30000,
+        connectTimeoutMS=20000,
+    )
 
 
 def load_data(
