@@ -26,7 +26,7 @@ jobs:
 
       - name: Run Multi-Day Prediction
         env:
-          MONGODB_URI: ${mongodb+srv://aqi_user:vA56HDiT4Z8zjxKr@cluster0.2c9uogg.mongodb.net/?appName=Cluster0}
-          DAGSHUB_TOKEN: ${fc1a8d0d535c4be5b24e23b5a04df24c5883b4b3}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         run: |
           python -m src.inference.predict_multi_day
