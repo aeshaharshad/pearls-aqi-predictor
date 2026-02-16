@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   run_inference:
-    runs-on: ubuntu-latest  # CRITICAL: Use Ubuntu 20.04 for OpenSSL 1.1.1
+    runs-on: ubuntu-latest
     env:
       MONGODB_URI: ${{ secrets.MONGODB_URI }}
       MONGODB_FEATURE_DB: ${{ secrets.MONGODB_FEATURE_DB }}
@@ -56,20 +56,23 @@ jobs:
               sys.exit(1)
           
           print("✅ MONGODB_URI present")
-          print("🔗 Testing connection...")
+          print("🔗 Testing connection with ssl.CERT_NONE...")
           
           try:
               client = pymongo.MongoClient(
                   uri,
                   tls=True,
-                  tlsAllowInvalidCertificates=True,
-                  serverSelectionTimeoutMS=30000
+                  tlsInsecure=True,
+                  serverSelectionTimeoutMS=30000,
+                  connectTimeoutMS=30000
               )
               info = client.server_info()
               print(f"✅ Connected to MongoDB v{info.get('version')}")
               print("=" * 60)
           except Exception as e:
               print(f"❌ Connection failed: {e}")
+              import traceback
+              traceback.print_exc()
               sys.exit(1)
           PY
 
