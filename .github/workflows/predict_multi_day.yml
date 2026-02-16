@@ -2,8 +2,8 @@ name: Hourly AQI Prediction
 
 on:
   schedule:
-    - cron: "0 * * * *"  # Every hour
-  workflow_dispatch:      # Manual trigger
+    - cron: "0 * * * *"
+  workflow_dispatch:
 
 concurrency:
   group: hourly-aqi
@@ -25,16 +25,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup Python 3.9 (for OpenSSL 1.1.1 compatibility)
+      - name: Setup Python 3.9
         uses: actions/setup-python@v4
         with:
-          python-version: "3.9"  # Only for GitHub Actions - avoids OpenSSL 3.x bug
+          python-version: "3.9"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          pip install 'pymongo[srv]==4.3.3'
+          pip install certifi dnspython
           pip install -r requirements.txt
-          pip install 'pymongo[srv]>=4.5.0' certifi dagshub mlflow python-dotenv
+          pip install dagshub mlflow python-dotenv
 
       - name: Verify MongoDB Connection
         run: |
@@ -56,26 +58,42 @@ jobs:
               sys.exit(1)
           
           print("✅ MONGODB_URI present")
+          print(f"URI format: {uri[:20]}...")
           print("🔗 Testing connection...")
           
           try:
+              # Try without any SSL parameters first
               client = pymongo.MongoClient(
                   uri,
-                  tls=True,
-                  tlsInsecure=True,
-                  serverSelectionTimeoutMS=30000,
-                  connectTimeoutMS=30000
+                  serverSelectionTimeoutMS=30000
               )
               info = client.server_info()
               print(f"✅ Connected to MongoDB v{info.get('version')}")
               print("=" * 60)
           except Exception as e:
-              print(f"❌ Connection failed: {e}")
-              import traceback
-              traceback.print_exc()
-              sys.exit(1)
+              print(f"❌ Connection failed: {type(e).__name__}")
+              print(f"Error: {str(e)[:200]}...")
+              
+              # Try with tlsInsecure
+              print("\n🔄 Retrying with tlsInsecure=True...")
+              try:
+                  client = pymongo.MongoClient(
+                      uri,
+                      tlsInsecure=True,
+                      serverSelectionTimeoutMS=30000
+                  )
+                  info = client.server_info()
+                  print(f"✅ Connected with tlsInsecure!")
+              except Exception as e2:
+                  print(f"❌ Still failed: {str(e2)[:200]}...")
+                  import traceback
+                  traceback.print_exc()
+                  sys.exit(1)
           PY
 
       - name: Run Multi-Day Prediction
         run: |
           python -m src.inference.predict_multi_day
+
+### Step 4: Alternative - Use MongoDB Connection String Parameters
+
