@@ -5,9 +5,13 @@ on:
     - cron: "0 * * * *"  # Every hour
   workflow_dispatch:      # Manual trigger
 
+concurrency:
+  group: hourly-aqi
+  cancel-in-progress: true
+
 jobs:
   run_inference:
-    runs-on: ubuntu-20.04  # CRITICAL: Use Ubuntu 20.04 for OpenSSL 1.1.1
+    runs-on: ubuntu-latest  # CRITICAL: Use Ubuntu 20.04 for OpenSSL 1.1.1
     env:
       MONGODB_URI: ${{ secrets.MONGODB_URI }}
       MONGODB_FEATURE_DB: ${{ secrets.MONGODB_FEATURE_DB }}
