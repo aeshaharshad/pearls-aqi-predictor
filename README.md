@@ -19,11 +19,6 @@ A fully automated **MLOps pipeline** that predicts **Karachi’s AQI 1–3 days 
 
 * **3 specialized models** (t+1, t+2, t+3 days)
 * **42 engineered time-series features**
-* **R² Scores:**
-
-  * 1-day → **0.92**
-  * 2-day → **0.88**
-  * 3-day → **0.84**
 * **Serverless architecture** (no VPS required)
 * **End-to-end ML lifecycle implemented**
 
@@ -166,13 +161,14 @@ src/
 
 ## 📈 Performance Metrics
 
-| Horizon | RMSE       | R²   |
-| ------- | ---------- | ---- |
-| 24h     | 8.5 µg/m³  | 0.92 |
-| 48h     | 12.3 µg/m³ | 0.88 |
-| 72h     | 15.1 µg/m³ | 0.84 |
+The models demonstrate reasonable predictive capability across multiple horizons:
 
-👉 Strong performance even at **72-hour forecasting horizon** (rare in AQI systems)
+- Short-term forecasts (t+1) perform best
+- Accuracy decreases gradually for longer horizons (t+2, t+3), which is expected in time-series forecasting
+
+Detailed metrics are available in MLflow experiment logs.
+
+ **72-hour forecasting horizon** 
 
 ---
 
